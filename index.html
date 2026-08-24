@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SwapDraws — Whiteboard Animation Studio</title>
+<meta name="description" content="SwapDraws is a free, private, browser-based whiteboard animation studio. Scenes, timeline, camera moves, SVG tracing, voiceover export and more.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%235b8cff'/%3E%3Cpath d='M8 24 L13.5 13.5 L21 6 L26 11 L18.5 18.5 Z' fill='white'/%3E%3Ccircle cx='23.5' cy='8.5' r='2.5' fill='%23ffb4a8'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ════════════════════ TOP BAR ════════════════════ -->
+<header id="topbar">
+  <div class="tb-group tb-brand" data-tour="brand">
+    <div class="logo-mark" aria-hidden="true">
+      <svg viewBox="0 0 32 32" width="26" height="26"><rect width="32" height="32" rx="7" fill="var(--accent)"/><path d="M8 24 L13.5 13.5 L21 6 L26 11 L18.5 18.5 Z" fill="#fff"/><circle cx="23.5" cy="8.5" r="2.5" fill="#ffb4a8"/></svg>
+    </div>
+    <div class="brand-txt">
+      <span class="brand-name">SwapDraws</span>
+      <span class="brand-sub">whiteboard studio</span>
+    </div>
+  </div>
+
+  <div class="tb-group tb-project">
+    <button id="btnProjects" class="tbtn" title="Projects (Ctrl+O)" aria-label="Projects">
+      <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span class="tbtn-label">Projects</span>
+    </button>
+    <button id="btnImportJSON" class="tbtn" title="Import a JSON storyboard or .swapdraws project" aria-label="Import JSON">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+      <span class="tbtn-label">Import JSON</span>
+    </button>
+    <input type="file" id="impJsonInput" accept="application/json,.json,.swapdraws" hidden>
+    <input id="projectName" class="proj-name" type="text" value="Untitled Project" spellcheck="false" title="Project name">
+    <span id="saveIndicator" class="save-ind" title="All changes saved locally">saved</span>
+  </div>
+
+  <div class="tb-group tb-center">
+    <button id="btnUndo" class="tbtn icon" title="Undo (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h9a7 7 0 0 1 0 14h-3"/></svg></button>
+    <button id="btnRedo" class="tbtn icon" title="Redo (Ctrl+Y)"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9h-9a7 7 0 0 0 0 14h3"/></svg></button>
+    <span class="tb-sep"></span>
+    <button id="btnPlay" class="tbtn play" title="Play / Pause (Space)"><svg class="ic-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg><svg class="ic-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg></button>
+    <button id="btnStop" class="tbtn icon" title="Back to start (Home)"><svg viewBox="0 0 24 24"><path d="M6 4h2.5v16H6zM20 4v16L9.5 12z"/></svg></button>
+    <span id="timeDisplay" class="time-disp" title="Playhead / scene duration">0:00.0 / 0:00.0</span>
+  </div>
+
+  <div class="tb-group tb-right">
+    <button id="btnSnapshot" class="tbtn" title="Save current frame as PNG"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg><span class="tbtn-label">Frame</span></button>
+    <button id="btnTheme" class="tbtn icon" title="Toggle light / dark theme"><svg class="ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.5 4.5l2 2M17.5 17.5l2 2M19.5 4.5l-2 2M6.5 17.5l-2 2"/></svg><svg class="ic-moon" viewBox="0 0 24 24" style="display:none"><path d="M20 13.5A8.5 8.5 0 1 1 10.5 4a7 7 0 0 0 9.5 9.5z"/></svg></button>
+    <button id="btnHelp" class="tbtn icon" title="Help &amp; shortcuts (?)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.8 2.13c-.83.52-1.3 1-1.3 1.87v.5"/><circle cx="12" cy="17.5" r=".5" fill="currentColor"/></svg></button>
+    <button id="btnTour" class="tbtn" title="Take the tour"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2a10 10 0 1 0 10 10"/><path d="M22 2 12 12"/></svg><span class="tbtn-label">Tour</span></button>
+    <button id="btnExport" class="tbtn accent big" data-tour="export" title="Export video (Ctrl+E)"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg><span>Export</span></button>
+  </div>
+</header>
+
+<!-- ════════════════════ WORKSPACE ════════════════════ -->
+<div id="workspace">
+
+  <!-- LEFT PANEL -->
+  <aside id="leftPanel" class="side-panel">
+    <nav class="ptabs" role="tablist">
+      <button class="ptab active" data-ptab="scenes" title="Scenes">Scenes</button>
+      <button class="ptab" data-ptab="design" title="Canvas, background, style">Design</button>
+      <button class="ptab" data-ptab="camera" title="Virtual camera">Camera</button>
+    </nav>
+
+    <!-- SCENES TAB -->
+    <section class="ppane active" data-ppane="scenes" data-tour="scenes">
+      <div class="pane-hint">Scenes play in order. Each scene has its own board, layers &amp; camera moves.</div>
+      <div id="sceneList" class="scene-list"></div>
+      <div class="row-btns">
+        <button id="btnAddScene" class="pbtn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add scene</button>
+      </div>
+      <div class="grp-label">Quick cards</div>
+      <div class="row-btns two">
+        <button id="btnAddTitleCard" class="pbtn">+ Title card</button>
+        <button id="btnAddOutro" class="pbtn">+ Outro card</button>
+      </div>
+      <div class="grp-label">Scene settings</div>
+      <div class="field"><label>Transition in</label>
+        <select id="sceneTransition">
+          <option value="none">Cut (none)</option><option value="fade">Crossfade</option>
+          <option value="wipe-left">Wipe → left</option><option value="wipe-right">Wipe → right</option>
+          <option value="wipe-up">Wipe → up</option><option value="wipe-down">Wipe → down</option>
+          <option value="slide-left">Push → left</option><option value="slide-right">Push → right</option>
+          <option value="slide-up">Push → up</option><option value="slide-down">Push → down</option>
+          <option value="zoom">Zoom through</option><option value="erase">Board erase</option>
+        </select>
+      </div>
+      <div class="field dual">
+        <div><label>Transition secs</label><input id="sceneTransDur" type="number" min="0.2" max="3" step="0.1" value="0.8"></div>
+        <div><label>Hold at end (s)</label><input id="sceneHold" type="number" min="0" max="10" step="0.1" value="0.8"></div>
+      </div>
+      <button id="btnDupScene" class="pbtn wide">Duplicate scene</button>
+      <button id="btnDelScene" class="pbtn wide danger">Delete scene</button>
+    </section>
+
+    <!-- DESIGN TAB -->
+    <section class="ppane" data-ppane="design" data-tour="design">
+      <div class="grp-label">Canvas</div>
+      <div class="chip-row" id="aspectChips">
+        <button class="chip" data-asp="16:9">16:9</button><button class="chip" data-asp="9:16">9:16</button>
+        <button class="chip" data-asp="1:1">1:1</button><button class="chip" data-asp="4:3">4:3</button><button class="chip" data-asp="custom">✎</button>
+      </div>
+      <div class="field dual" id="customCanvasRow" style="display:none">
+        <div><label>Width</label><input id="canvasW" type="number" min="320" max="4096" step="8" value="1920"></div>
+        <div><label>Height</label><input id="canvasH" type="number" min="320" max="4096" step="8" value="1080"></div>
+      </div>
+      <div class="field"><label>Resolution</label>
+        <select id="canvasRes"><option value="720">720p HD</option><option value="1080" selected>1080p Full HD</option><option value="1440">1440p QHD</option><option value="2160">2160p 4K</option></select>
+      </div>
+
+      <div class="grp-label">Style presets <span class="soft">— board + ink + hand in one click</span></div>
+      <div id="stylePresets" class="preset-grid"></div>
+
+      <div class="grp-label">Board background</div>
+      <div id="bgPresets" class="bg-grid"></div>
+      <div class="field" id="bgColorRow" style="display:none"><label>Custom color</label>
+        <div class="color-row"><input type="color" id="bgColor" value="#f7f3ea"><input type="text" id="bgColorHex" class="hex" value="#f7f3ea" spellcheck="false"></div>
+      </div>
+
+      <div class="grp-label">Stage view</div>
+      <div class="field check"><label><input type="checkbox" id="optGuides" checked> Center guides &amp; snapping</label></div>
+      <div class="field check"><label><input type="checkbox" id="optGrid"> Grid overlay</label></div>
+      <div class="field check"><label><input type="checkbox" id="optSafe"> Title-safe margins</label></div>
+    </section>
+
+    <!-- CAMERA TAB -->
+    <section class="ppane" data-ppane="camera" data-tour="camera">
+      <div class="pane-hint">Animate a virtual camera over the board — pan &amp; zoom between keyframes, Ken-Burns style.</div>
+      <div class="field check"><label><input type="checkbox" id="camEnable"> Enable camera moves for this scene</label></div>
+      <div class="row-btns two">
+        <button id="camAddKf" class="pbtn">＋ Key at playhead</button>
+        <button id="camAuto" class="pbtn" title="Focus camera on each layer as it draws">✨ Auto-focus layers</button>
+      </div>
+      <div class="row-btns two">
+        <button id="camFitBtn" class="pbtn" title="Add a final keyframe that zooms out to the full board">⤢ End zoomed out</button>
+        <button id="camClear" class="pbtn danger">Clear all keys</button>
+      </div>
+      <div class="grp-label">Keyframes (this scene)</div>
+      <div id="camKfList" class="kf-list"><div class="empty-mini">No keys yet — camera stays wide.</div></div>
+      <div class="pane-hint small">Tip: keys also appear as ◆ on the camera lane in the timeline. Drag them to retime; double-click to edit.</div>
+    </section>
+  </aside>
+
+  <!-- STAGE -->
+  <main id="stageWrap">
+    <div id="stageScroller">
+      <div id="stageBox">
+        <canvas id="stageCanvas"></canvas>
+        <div id="marqueeDiv" hidden></div>
+        <textarea id="textEditOverlay" hidden spellcheck="false"></textarea>
+        <div id="drawToolbar" hidden>
+          <button class="dtool active" data-dtool="pen" title="Pen (P)"><svg viewBox="0 0 24 24"><path d="M4 20l1.5-5L17 4.5a2.1 2.1 0 0 1 3 3L9.5 19z"/></svg></button>
+          <button class="dtool" data-dtool="marker" title="Marker (M)"><svg viewBox="0 0 24 24"><path d="M5 19l1-4L16.5 4.5a2.3 2.3 0 0 1 3.2 3.2L9 18z"/><path d="M13 7l4 4"/></svg></button>
+          <button class="dtool" data-dtool="highlighter" title="Highlighter (H)"><svg viewBox="0 0 24 24"><path d="M4 16l8.5-8.5 4 4L8 20H4z"/><path d="M14 4l6 6"/></svg></button>
+          <button class="dtool" data-dtool="eraserStroke" title="Stroke eraser (E)"><svg viewBox="0 0 24 24"><path d="M6 19h12M8 15l7.5-7.5a2 2 0 0 1 3 3L11 18H7v-3z"/></svg></button>
+          <span class="dt-sep"></span>
+          <input type="color" id="drawColor" value="#222831" title="Ink color">
+          <input type="range" id="drawWidth" min="2" max="26" value="6" title="Stroke width">
+          <span class="dt-sep"></span>
+          <button id="drawUndo" class="dtool" title="Undo stroke (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h9a7 7 0 0 1 0 14h-3"/></svg></button>
+          <button id="drawDone" class="pbtn primary" title="Finish drawing (Esc)">Done ✓</button>
+        </div>
+      </div>
+    </div>
+    <div id="stageHUD">
+      <div class="hud-group">
+        <button id="stageZoomOut" class="hud-btn" title="Zoom out (−)">−</button>
+        <button id="stageZoomLabel" class="hud-btn label" title="Zoom level — click to fit">100%</button>
+        <button id="stageZoomIn" class="hud-btn" title="Zoom in (+)">+</button>
+        <button id="stageFit" class="hud-btn" title="Fit to screen (0)">Fit</button>
+      </div>
+      <div class="hud-group" id="stageMeta"><span id="hudCanvasSize">1920 × 1080</span><span class="dot">•</span><span id="hudSceneName">Scene 1</span></div>
+    </div>
+    <div id="stageEmpty" class="stage-empty" hidden>
+      <svg viewBox="0 0 24 24" width="44" height="44"><path d="M4 20l1.5-5L17 4.5a2.1 2.1 0 0 1 3 3L9.5 19z" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+      <p>This board is empty.<br>Drop an image, or add text, shapes, icons &amp; drawings from the <b>Content</b> panel →</p>
+    </div>
+  </main>
+
+  <!-- RIGHT PANEL -->
+  <aside id="rightPanel" class="side-panel">
+    <nav class="ptabs" role="tablist">
+      <button class="ptab active" data-ptab="content">Content</button>
+      <button class="ptab" data-ptab="animate">Animate</button>
+      <button class="ptab" data-ptab="layers">Layers</button>
+    </nav>
+
+    <!-- CONTENT TAB -->
+    <section class="ppane active" data-ppane="content" data-tour="content">
+      <div id="dropZone" class="dropzone" tabindex="0">
+        <svg viewBox="0 0 24 24" width="30" height="30"><path d="M12 16V4m0 0 4 4m-4-4-4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+        <b>Drop images or click to browse</b>
+        <span>PNG, JPG, WebP, GIF, SVG — multiple OK. SVGs trace their real paths!</span>
+        <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" multiple hidden>
+      </div>
+      <div class="add-grid">
+        <button class="add-card" id="btnAddText" data-tour="addtext"><svg viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16m-3 0h6"/></svg>Text</button>
+        <button class="add-card" id="btnAddDraw"><svg viewBox="0 0 24 24"><path d="M4 20l1.5-5L17 4.5a2.1 2.1 0 0 1 3 3L9.5 19z"/></svg>Draw</button>
+        <button class="add-card" id="btnAddShape"><svg viewBox="0 0 24 24"><path d="M4 12h13m0 0-4-4m4 4-4 4"/><circle cx="6" cy="6" r="2"/></svg>Shapes</button>
+        <button class="add-card" id="btnAddIcon"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.3.8-4.6 4.2 1.2 6.2L12 16.7l-5.6 3.1 1.2-6.2L3 9.4l6.3-.8z"/></svg>Icons</button>
+      </div>
+
+      <div id="shapePanel" class="lib-panel" hidden>
+        <div class="lib-head"><b>Shapes &amp; annotations</b><button class="x" data-close="shapePanel">×</button></div>
+        <div id="shapeGrid" class="lib-grid"></div>
+      </div>
+
+      <div id="iconPanel" class="lib-panel" hidden>
+        <div class="lib-head"><b>Icon library</b><input id="iconSearch" type="search" placeholder="search icons…"><button class="x" data-close="iconPanel">×</button></div>
+        <div id="iconGrid" class="lib-grid icons"></div>
+      </div>
+
+      <div class="pane-hint" style="margin-top:10px">💡 You can also paste an image straight from the clipboard (Ctrl+V), and drag files onto the canvas.</div>
+    </section>
+
+    <!-- ANIMATE TAB -->
+    <section class="ppane" data-ppane="animate" data-tour="animate">
+      <div id="animEmpty" class="empty-mini">Select a layer to choreograph how it's drawn.</div>
+      <div id="animControls" hidden>
+        <div class="grp-label">Animation style</div>
+        <div id="animStyleGrid" class="style-grid"></div>
+        <div class="field"><label>Direction</label>
+          <select id="animDir"><option value="ltr">Left → right</option><option value="rtl">Right → left</option><option value="ttb">Top → bottom</option><option value="btt">Bottom → top</option><option value="center">From center</option><option value="random">Shuffle</option></select>
+        </div>
+        <div class="field dual">
+          <div><label>Duration (s) <button id="btnAutoDur" class="mini-btn" title="Estimate from path length">auto</button></label><input id="animDur" type="number" min="0.2" max="60" step="0.1" value="2"></div>
+          <div><label>Start delay (s)</label><input id="animDelay" type="number" min="0" max="600" step="0.1" value="0"></div>
+        </div>
+        <div class="field"><label>Speed easing</label>
+          <select id="animEasing"><option value="linear">Linear (constant pen)</option><option value="easeInOut">Ease in &amp; out</option><option value="easeIn">Ease in</option><option value="easeOut">Ease out</option><option value="bounceSoft">Soft bounce</option></select>
+        </div>
+        <div class="field dual">
+          <div><label>Ink color</label><input type="color" id="strokeColor" value="#222831"></div>
+          <div><label>Stroke width</label><input id="strokeWidth" type="number" min="1" max="40" step="1" value="6"></div>
+        </div>
+        <div class="field slider"><label>Hand-drawn wobble <span class="soft" id="jitterVal">0%</span></label><input type="range" id="animJitter" min="0" max="100" value="0"></div>
+
+        <div class="grp-label">Reveal &amp; extras</div>
+        <div class="field check"><label><input type="checkbox" id="fillReveal" checked> Fade in full color after drawing</label></div>
+        <div class="field check"><label><input type="checkbox" id="rainbowPen"> 🌈 Multicolor pen</label></div>
+        <div class="field two-sel" id="inkRow">
+          <div><label>Outline algorithm</label><select id="inkAlgo"><option value="edge">Edge (Canny-style)</option><option value="adaptive">Adaptive threshold</option><option value="chroma">Color boundary</option><option value="log">Fine detail (LoG)</option></select></div>
+          <div><label>Detail <span class="soft" id="inkSensVal">50%</span></label><input type="range" id="inkSens" min="0" max="100" value="50"></div>
+        </div>
+        <div class="field check" id="soundRow"><label><input type="checkbox" id="optSfx"> ✏️ Pencil scratch sound in export</label></div>
+
+        <div class="grp-label">Hand</div>
+        <div id="handRow" class="hand-row"></div>
+        <div class="field check"><label><input type="checkbox" id="handRotate"> Tilt hand along stroke direction</label></div>
+
+        <div class="grp-label">Exit animation</div>
+        <div class="field dual">
+          <div><label>Style</label><select id="exitStyle"><option value="none">None</option><option value="fade">Fade out</option><option value="shrink">Shrink out</option><option value="slide">Slide out</option><option value="dissolve">Dissolve</option><option value="erase">Eraser wipe</option></select></div>
+          <div><label>Secs</label><input id="exitDur" type="number" min="0.2" max="5" step="0.1" value="0.7"></div>
+        </div>
+        <div class="row-btns two">
+          <button id="btnApplyAll" class="pbtn" title="Copy this animation setup to every layer in the scene">Apply to all layers</button>
+          <button id="btnResetAnim" class="pbtn">Reset</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- LAYERS TAB -->
+    <section class="ppane" data-ppane="layers" data-tour="layers">
+      <div class="row-btns">
+        <button id="btnDupLayer" class="pbtn" title="Duplicate (Ctrl+D)">Duplicate</button>
+        <button id="btnDelLayer" class="pbtn danger" title="Delete (Del)">Delete</button>
+      </div>
+      <div class="row-btns">
+        <button id="btnLayerUp" class="pbtn" title="Bring forward (])">↑ Forward</button>
+        <button id="btnLayerDown" class="pbtn" title="Send backward ([)">↓ Backward</button>
+      </div>
+      <div id="layerList" class="layer-list"><div class="empty-mini">No layers yet.</div></div>
+      <div class="grp-label">Selected layer transform</div>
+      <div id="transformBox" class="xform">
+        <div class="field dual"><div><label>X</label><input id="tfX" type="number" step="1"></div><div><label>Y</label><input id="tfY" type="number" step="1"></div></div>
+        <div class="field dual"><div><label>Width</label><input id="tfW" type="number" step="1" min="1"></div><div><label>Height</label><input id="tfH" type="number" step="1" min="1"></div></div>
+        <div class="field dual"><div><label>Rotation°</label><input id="tfR" type="number" step="1"></div><div><label>Opacity %</label><input id="tfO" type="number" step="1" min="0" max="100"></div></div>
+        <div class="row-btns two">
+          <button id="tfFlipX" class="pbtn" title="Flip horizontal">⇋ Flip H</button><button id="tfFlipY" class="pbtn" title="Flip vertical">⇵ Flip V</button>
+        </div>
+      </div>
+      <div id="textBox" class="xform" hidden>
+        <div class="grp-label">Text</div>
+        <textarea id="txtContent" rows="2" spellcheck="false"></textarea>
+        <div class="field"><label>Font</label><select id="txtFont"></select></div>
+        <div class="field dual">
+          <div><label>Size</label><input id="txtSize" type="number" min="8" max="900" step="1"></div>
+          <div><label>Color</label><input type="color" id="txtColor"></div>
+        </div>
+        <div class="row-btns">
+          <button id="txtBold" class="pbtn togglable" title="Bold"><b>B</b></button>
+          <button id="txtItalic" class="pbtn togglable" title="Italic"><i>I</i></button>
+          <button id="txtAlignL" class="pbtn togglable" title="Align left">⯇</button>
+          <button id="txtAlignC" class="pbtn togglable" title="Align center">≡</button>
+          <button id="txtAlignR" class="pbtn togglable" title="Align right">⯈</button>
+        </div>
+        <div class="field dual">
+          <div><label>Line height</label><input id="txtLineH" type="number" min="0.8" max="3" step="0.05" value="1.25"></div>
+          <div><label>Letter spacing</label><input id="txtSpacing" type="number" min="-10" max="100" step="0.5" value="0"></div>
+        </div>
+        <div class="field"><label>Underline swipe</label><select id="txtUnderline"><option value="none">None</option><option value="line">Underline</option><option value="squiggle">Squiggle</option><option value="highlight">Highlight</option></select></div>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<!-- ════════════════════ TIMELINE ════════════════════ -->
+<footer id="timeline" data-tour="timeline">
+  <div class="tl-left">
+    <button id="btnPreviewScene" class="tbtn" title="Play scene from playhead"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+    <button id="tlAutoSeq" class="pbtn" title="Lay layers out back-to-back with a small gap">Auto-sequence</button>
+    <button id="tlOverlap" class="pbtn" title="Overlap all selected layers so they draw together">Draw together</button>
+  </div>
+  <div class="tl-mid">
+    <div id="tlRulerWrap"><canvas id="tlRuler"></canvas><div id="tlPlayhead"><div class="ph-cap"></div></div></div>
+    <div id="tlLanes">
+      <div id="tlCamLane" class="tl-lane cam" title="Camera keyframes — drag to move, double-click to edit, right-click to delete"><span class="lane-label">📷</span></div>
+      <div id="tlTracks"></div>
+    </div>
+  </div>
+  <div class="tl-right">
+    <span id="tlDuration" class="time-disp">0:06.0</span>
+    <button id="tlZoomOut" class="hud-btn" title="Timeline zoom out">−</button>
+    <input id="tlZoom" type="range" min="8" max="120" value="40" title="Timeline zoom">
+    <button id="tlZoomIn" class="hud-btn" title="Timeline zoom in">+</button>
+  </div>
+</footer>
+
+<!-- ════════════════════ EXPORT MODAL ════════════════════ -->
+<div id="exportModal" class="modal-back" hidden>
+  <div class="modal export-modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><h2>Export animation</h2><button class="x" data-close="exportModal">×</button></div>
+    <div class="modal-body" id="exportSetup">
+      <div class="exp-cols">
+        <div>
+          <div class="grp-label">Format</div>
+          <div class="fmt-grid">
+            <button class="fmt-card active" data-fmt="webm"><b>WebM</b><span>VP9 · every browser</span></button>
+            <button class="fmt-card" data-fmt="mp4" id="fmtMp4"><b>MP4</b><span>H.264 · Chrome/Edge</span></button>
+            <button class="fmt-card" data-fmt="gif"><b>GIF</b><span>Loops · small size</span></button>
+            <button class="fmt-card" data-fmt="png"><b>PNG</b><span>Current frame</span></button>
+          </div>
+          <div class="grp-label">Scope</div>
+          <select id="expScope"><option value="all">Whole project (all scenes)</option><option value="scene">Current scene only</option></select>
+          <div class="field dual">
+            <div><label>FPS</label><select id="expFps"><option value="24">24</option><option value="30" selected>30</option><option value="60">60</option></select></div>
+            <div><label>Quality</label><select id="expQuality"><option value="high" selected>High · 12 Mbps</option><option value="medium">Medium · 6 Mbps</option><option value="low">Low · 2.5 Mbps</option></select></div>
+          </div>
+          <div class="field"><label>Resolution scale</label><select id="expScale"><option value="0.5">50%</option><option value="0.75">75%</option><option value="1" selected>100% (native)</option><option value="1.5">150%</option><option value="2">200%</option></select></div>
+        </div>
+        <div>
+          <div class="grp-label">Audio <span class="soft">— mixed live into the recording</span></div>
+          <div class="field check"><label><input type="checkbox" id="expMic"> 🎙 Record voiceover (microphone)</label></div>
+          <div class="field slider" id="micVolRow" hidden><label>Mic volume</label><input type="range" id="micVol" min="0" max="200" value="100"></div>
+          <div class="field check"><label><input type="checkbox" id="expMusic"> 🎵 Background music</label></div>
+          <div id="musicRows" hidden>
+            <div class="row-btns"><button id="expMusicPick" class="pbtn wide">Choose audio file…</button><input type="file" id="expMusicFile" accept="audio/*" hidden></div>
+            <div id="musicName" class="pane-hint small">No track selected</div>
+            <div class="field slider"><label>Music volume</label><input type="range" id="musicVol" min="0" max="100" value="35"></div>
+            <div class="field check"><label><input type="checkbox" id="musicLoop" checked> Loop if shorter than video</label></div>
+          </div>
+          <div class="grp-label">File</div>
+          <div class="field"><label>Filename</label><input id="expName" type="text" value="swapdraws-animation" spellcheck="false"></div>
+          <div class="pane-hint small" id="expEstimate">Estimate: —</div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="pbtn" data-close="exportModal">Cancel</button>
+        <button id="expStart" class="pbtn primary big">● Start recording</button>
+      </div>
+    </div>
+    <div class="modal-body" id="exportProgress" hidden>
+      <div class="exp-progress">
+        <div class="rec-dot"></div><div class="exp-status" id="expStatus">Preparing…</div>
+      </div>
+      <div class="bar"><div id="expBar" class="bar-fill"></div></div>
+      <div class="pane-hint small center" id="expEta">—</div>
+      <div class="modal-foot"><button id="expCancel" class="pbtn danger">Cancel export</button></div>
+    </div>
+    <div class="modal-body" id="exportDone" hidden>
+      <div class="exp-done-icon">🎉</div>
+      <h3 class="center">Export complete!</h3>
+      <p class="center" id="expDoneInfo">—</p>
+      <div class="modal-foot">
+        <button id="expSaveFrame" class="pbtn">Also save final frame PNG</button>
+        <button id="expAgain" class="pbtn">Export another</button>
+        <button id="expDownload" class="pbtn primary big">⬇ Download</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ PROJECTS MODAL ════════════════════ -->
+<div id="projectsModal" class="modal-back" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><h2>My projects</h2><button class="x" data-close="projectsModal">×</button></div>
+    <div class="modal-body">
+      <div class="row-btns">
+        <button id="btnNewProject" class="pbtn primary">＋ New project</button>
+        <button id="btnImportProject" class="pbtn">⬆ Import JSON / project</button>
+        <input type="file" id="importProjInput" accept="application/json,.json,.swapdraws" hidden>
+        <button id="btnExportProject" class="pbtn">⬇ Download current as file</button>
+        <button id="btnExportScript" class="pbtn ghost" title="Download this project as an editable, human-readable JSON storyboard">⬇ as script JSON</button>
+      </div>
+      <div id="projList" class="proj-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ HELP MODAL ════════════════════ -->
+<div id="helpModal" class="modal-back" hidden>
+  <div class="modal help-modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><h2>Help &amp; keyboard shortcuts</h2><button class="x" data-close="helpModal">×</button></div>
+    <div class="modal-body help-body">
+      <div class="help-cols">
+        <div>
+          <h3>Workflow</h3>
+          <ol class="help-list">
+            <li><b>Add content</b> — drop images/SVGs, text, icons, shapes, or draw freehand. Each becomes a layer.</li>
+            <li><b>Choreograph</b> — pick an animation style per layer in <i>Animate</i>: hand-drawn outlines, chalk, scanner, spiral, typewriter…</li>
+            <li><b>Direct the camera</b> — add keyframes or hit <i>Auto-focus layers</i> for cinematic zooms.</li>
+            <li><b>Arrange time</b> — drag layer bars in the timeline; overlap to draw together.</li>
+            <li><b>Or just write JSON</b> — import a hand-authored JSON storyboard (<i>Import JSON</i> in the top bar / welcome screen) and get a full video automatically. Grab the ✨ sample on the welcome screen for the format.</li>
+            <li><b>Scenes</b> — chain boards with transitions; add title &amp; outro cards.</li>
+            <li><b>Export</b> — WebM/MP4 video with optional voiceover &amp; music, or a GIF/PNG.</li>
+          </ol>
+          <h3>Privacy</h3>
+          <p class="help-list">Everything runs locally in your browser. Projects auto-save to this device; nothing is uploaded.</p>
+        </div>
+        <div>
+          <h3>Shortcuts</h3>
+          <table class="keys-table">
+            <tr><td><kbd>Space</kbd></td><td>Play / pause</td></tr>
+            <tr><td><kbd>Home</kbd></td><td>Go to start</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Y</kbd></td><td>Undo / redo</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>Duplicate layer</td></tr>
+            <tr><td><kbd>Del</kbd></td><td>Delete selected</td></tr>
+            <tr><td><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd></td><td>Nudge (⇧ = ×10)</td></tr>
+            <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>Reorder layer</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>A</kbd></td><td>Select all layers</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>E</kbd></td><td>Export</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>Projects</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>V</kbd></td><td>Paste image</td></tr>
+            <tr><td><kbd>0</kbd></td><td>Fit stage</td></tr>
+            <tr><td><kbd>+</kbd>/<kbd>−</kbd></td><td>Stage zoom</td></tr>
+            <tr><td><kbd>?</kbd></td><td>This help</td></tr>
+          </table>
+        </div>
+      </div>
+      <p class="attribution">Hand artwork adapted from the open-source <b>Inkplainer</b> project (Apache License 2.0). Fonts: Caveat, Patrick Hand, Permanent Marker, Shadows Into Light, Kalam, Nunito, DM Sans, Merriweather, Space Mono (SIL OFL).</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ TOUR ════════════════════ -->
+<div id="tourOverlay" hidden>
+  <div id="tourCard">
+    <div id="tourStep"></div>
+    <h3 id="tourTitle"></h3>
+    <p id="tourText"></p>
+    <div class="tour-nav">
+      <button id="tourSkip" class="pbtn">Skip</button>
+      <span id="tourDots"></span>
+      <button id="tourNext" class="pbtn primary">Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ WELCOME ════════════════════ -->
+<div id="welcomeOverlay" hidden>
+  <div class="wel-card">
+    <div class="wel-brand">
+      <svg viewBox="0 0 32 32" width="52" height="52"><rect width="32" height="32" rx="7" fill="var(--accent)"/><path d="M8 24 L13.5 13.5 L21 6 L26 11 L18.5 18.5 Z" fill="#fff"/><circle cx="23.5" cy="8.5" r="2.5" fill="#ffb4a8"/></svg>
+      <div><h1>SwapDraws</h1><p>Free whiteboard animation studio — scenes, timeline, camera moves, voiceover, GIF &amp; video export. No sign-up, no watermark, nothing leaves your device.</p></div>
+    </div>
+    <div class="wel-cols">
+      <div class="wel-new">
+        <h3>Start something new</h3>
+        <div class="wel-name-row"><input id="welName" type="text" placeholder="My awesome explainer" spellcheck="false"><button id="welCreate" class="pbtn primary big">Create →</button></div>
+        <div class="wel-templates" id="welTemplates">
+          <button class="tpl" data-tpl="blank"><b>Blank board</b><span>Empty 16:9 canvas</span></button>
+          <button class="tpl" data-tpl="explainer"><b>Explainer kit</b><span>Title + content + outro scenes</span></button>
+          <button class="tpl" data-tpl="social"><b>Social short</b><span>9:16 vertical board</span></button>
+          <button class="tpl" data-tpl="chalk"><b>Chalkboard class</b><span>Blackboard style preset</span></button>
+        </div>
+        <div class="wel-io">
+          <button id="welImport" class="pbtn">📥 Import JSON storyboard / project</button>
+          <button id="welSample" class="pbtn ghost" title="Download an example JSON script you can edit & re-import">✨ sample</button>
+        </div>
+        <input type="file" id="welImpInput" accept="application/json,.json,.swapdraws" hidden>
+      </div>
+      <div class="wel-recent-box">
+        <h3>Recent projects</h3>
+        <div id="welRecent" class="wel-recent"><div class="empty-mini">Nothing yet — your projects auto-save here.</div></div>
+      </div>
+    </div>
+    <div class="wel-feats">
+      <span>✋ 4 real hand styles</span><span>🎬 Multi-scene</span><span>📹 Timeline + scrub</span><span>🔭 Camera moves</span><span>✒️ SVG path tracing</span><span>🎙 Voiceover &amp; music</span><span>🖼 GIF &amp; PNG export</span><span>🔒 100% private</span>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<div id="dropVeil" hidden><div>⬇ Drop to add to the board</div></div>
+
+<script src="js/util.js"></script>
+<!-- small-screen notice: shown by CSS media query only -->
+<div id="smallScreenNote">
+  <div class="ssn-card">
+    <div class="ssn-logo">✍️</div>
+    <h2>SwapDraws works best on a big screen</h2>
+    <p>This is a full studio with a stage, timeline and panels — grab a laptop or desktop (or widen this window past ~900&nbsp;px) for the full experience.</p>
+    <p class="ssn-dim">Everything stays on your device; your projects will be waiting here when you come back.</p>
+    <button id="ssnContinue" class="btn ghost">Continue anyway</button>
+  </div>
+</div>
+
+<script src="js/assets.js"></script>
+<script src="js/ink.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/state.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/stage.js"></script>
+<script src="js/timeline.js"></script>
+<script src="js/panels.js"></script>
+<script src="js/export.js"></script>
+<script src="js/jsonio.js"></script>
+<script src="js/tour.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
