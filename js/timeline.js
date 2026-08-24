@@ -8,7 +8,7 @@
 
   let pxPerSec = 40;
   let built = false;
-  const TYPE_ICON = { image: '🖼', svg: '✒️', text: 'T', drawing: '✏', shape: '➤', icon: '★' };
+  const TYPE_ICON = { image: '🖼', svg: '✒️', text: 'T', drawing: '✏', shape: '➤', icon: '★', audio: '🔊' };
 
   function init() {
     U.$('#tlZoom').addEventListener('input', (e) => { pxPerSec = +e.target.value; rebuild(); });

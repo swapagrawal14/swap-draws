@@ -135,6 +135,76 @@
     return registerImage(blob);
   }
 
+  /* ────────────────────────────────────────────────
+     Audio assets (JSON voiceovers + per-scene clips).
+     Blobs live in the same IndexedDB 'assets' store as images;
+     HTMLAudioElements / decoded bytes are cached per asset id.
+     ──────────────────────────────────────────────── */
+  const audioCache = new Map(); // assetId -> { blob, meta:{name,mime,dataURL,duration}, el?, objURL?, bytes? }
+
+  function probeAudioDuration(rec) {
+    return new Promise((res, rej) => {
+      const url = rec.objURL || (rec.objURL = URL.createObjectURL(rec.blob));
+      const a = new Audio();
+      a.preload = 'metadata';
+      const to = setTimeout(() => finish(new Error('audio metadata timeout')), 5000);
+      function finish(err, d) { clearTimeout(to); err ? rej(err) : res(d); }
+      a.onloadedmetadata = () => (isFinite(a.duration) && a.duration > 0 ? finish(null, a.duration) : finish(new Error('unreadable audio duration')));
+      a.onerror = () => finish(new Error('unsupported or corrupt audio'));
+      a.src = url;
+    });
+  }
+
+  /** register an audio blob. returns {id, duration, name} — throws if unreadable */
+  async function registerAudio(blob, opts = {}) {
+    const id = U.uid('aud');
+    const rec = { blob, meta: { name: opts.name || 'Audio', mime: blob.type || 'audio/mpeg', dataURL: opts.dataURL || null, duration: 0 } };
+    audioCache.set(id, rec);
+    try { rec.meta.duration = await probeAudioDuration(rec); }
+    catch (e) { audioCache.delete(id); throw e; }
+    await idbPut(id, blob);
+    return { id, duration: rec.meta.duration, name: rec.meta.name };
+  }
+  /** register audio from a data-URL (JSON scripts). keeps the dataURL for readable re-export */
+  async function registerAudioDataURL(dataURL, opts = {}) {
+    const blob = await (await fetch(dataURL)).blob();
+    return registerAudio(blob, { ...opts, dataURL });
+  }
+  /** restore from a project backup: carries saved meta (name/duration) */
+  async function registerAudioStored(dataURL, meta = {}) {
+    const blob = await (await fetch(dataURL)).blob();
+    const id = U.uid('aud');
+    const rec = { blob, meta: { name: meta.name || 'Audio', mime: blob.type || 'audio/mpeg', dataURL, duration: +(meta.duration) || 0 } };
+    audioCache.set(id, rec);
+    await idbPut(id, blob);
+    if (!rec.meta.duration) rec.meta.duration = await probeAudioDuration(rec).catch(() => 0);
+    return { id, duration: rec.meta.duration, name: rec.meta.name };
+  }
+  /** load (or lazily restore from IDB) an audio record */
+  async function loadAudioRec(id) {
+    if (audioCache.has(id)) return audioCache.get(id);
+    const blob = await idbGet(id);
+    if (!blob) throw new Error('missing audio asset ' + id);
+    const rec = { blob, meta: { name: 'Audio', mime: blob.type || 'audio/mpeg', dataURL: null, duration: 0 } };
+    audioCache.set(id, rec);
+    rec.meta.duration = await probeAudioDuration(rec).catch(() => 0);
+    return rec;
+  }
+  /** cached HTMLAudioElement for app playback */
+  async function ensureAudio(id) {
+    const rec = await loadAudioRec(id);
+    if (!rec.el) { const el = new Audio(); el.preload = 'auto'; el.src = rec.objURL || (rec.objURL = URL.createObjectURL(rec.blob)); rec.el = el; }
+    return rec.el;
+  }
+  function audioElSync(id) { const rec = audioCache.get(id); return (rec && rec.el) || null; }
+  function audioMetaSync(id) { const rec = audioCache.get(id); return rec ? rec.meta : null; }
+  /** raw bytes for WebAudio decodeAudioData at export time */
+  async function audioArrayBuffer(id) {
+    const rec = await loadAudioRec(id);
+    if (!rec.bytes) rec.bytes = await rec.blob.arrayBuffer();
+    return rec.bytes;
+  }
+
   /* ── fonts ── */
   const UI_FONTS = [
     { family: 'Caveat', label: 'Caveat · handwritten', weights: '600' },
@@ -162,6 +232,8 @@
   SD.assets = {
     HANDS, handConf, loadHand, getHandSync, preloadHands,
     registerImage, getImage, getImageSync, deleteImage, registerDataURL, blobToImage,
+    registerAudio, registerAudioDataURL, registerAudioStored,
+    ensureAudio, audioElSync, audioMetaSync, audioArrayBuffer, loadAudioRec,
     UI_FONTS, ensureFontsLoaded,
   };
 })();

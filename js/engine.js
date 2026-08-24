@@ -705,7 +705,7 @@
   function autoCamera(project, scene) {
     const keys = [];
     const cw = project.canvas.width, ch = project.canvas.height;
-    const layers = scene.layers.filter((l) => l.visible !== false);
+    const layers = scene.layers.filter((l) => l.visible !== false && l.type !== 'audio');
     if (!layers.length) return keys;
     keys.push({ t: 0, x: 0.5, y: 0.5, zoom: 1 });
     for (const l of layers.sort((a, b) => a.start - b.start)) {
@@ -832,6 +832,7 @@
   /* estimate draw-on duration from path length */
   const PEN_SPEED = 1500; // px per second for full-length drawing
   function estimateDuration(project, layer) {
+    if (layer.type === 'audio') return U.clamp(layer.duration || (layer.audio && layer.audio.mediaDuration) || 1, 0.1, 600);
     const plan = planFor(project, layer);
     const a = layer.anim;
     if (a.style === 'typewriter') return U.clamp((plan.text ? plan.text.totalChars : 10) / 9, 0.6, 30);
@@ -874,6 +875,7 @@
   /** render one layer at scene-local time into ctx (ctx is in scene coords) */
   function renderLayer(ctx, project, scene, layer, t, opts) {
     if (layer.visible === false) return null;
+    if (layer.type === 'audio') return null; // audio layers are heard, not drawn
     const start = layer.start || 0, dur = Math.max(0.01, layer.duration || 1);
     const cEnd = contentEnd(scene);
     const plan = planFor(project, layer);
@@ -1025,11 +1027,60 @@
   }
 
   /* ═══════════════ exports of the module ═══════════════ */
+  /* ═══════════════ playback audio sync (HTMLAudioElements vs playhead) ═══════════════ */
+  const pbEls = new Map(); // layerId | 'voiceover' -> HTMLAudioElement
+
+  function driveAudioEl(key, conf, rel) {
+    const mediaDur = conf.mediaDuration || 0;
+    if (!conf.loop && mediaDur > 0 && rel >= mediaDur) { pauseAudioKey(key); return; }
+    let el = SD.assets.audioElSync(conf.assetId);
+    if (!el) { SD.assets.ensureAudio(conf.assetId).then(() => { if (SD.assets.audioElSync(conf.assetId)) SD.assets.audioElSync(conf.assetId).volume = U.clamp(conf.volume ?? 1, 0, 1); }).catch(() => {}); return; }
+    el.volume = U.clamp(conf.volume ?? 1, 0, 1);
+    el.loop = !!conf.loop;
+    const dur = el.duration || mediaDur;
+    pbEls.set(key, el);
+    if (dur > 0) {
+      const want = conf.loop ? (rel % dur) : rel;
+      if (Math.abs(el.currentTime - want) > 0.15 || (el.paused && want > 0.02 && el.currentTime === 0)) {
+        try { el.currentTime = Math.min(want, Math.max(0, dur - 0.04)); } catch {}
+      }
+    }
+    if (el.paused) el.play().catch(() => {});
+  }
+  function pauseAudioKey(key) {
+    const el = pbEls.get(key);
+    if (el) { try { el.pause(); } catch {} }
+  }
+  /** keep audio aligned with the playhead: call each playback tick, and with playing=false on pause/stop */
+  function syncAudio(project, sceneIdx, localT, playing) {
+    if (!project || !project.scenes) return;
+    const active = new Set();
+    const scene = project.scenes[sceneIdx];
+    if (playing && scene) {
+      for (const l of scene.layers) {
+        if (l.type !== 'audio' || !l.audio || l.visible === false) continue;
+        const key = l.id, rel = localT - (l.start || 0);
+        if (rel >= 0 && rel < Math.max(0.01, l.duration || 0)) { active.add(key); driveAudioEl(key, l.audio, rel); }
+        else pauseAudioKey(key);
+      }
+      const vo = project.voiceover;
+      if (vo && vo.assetId) {
+        const gRel = (sceneStarts(project)[sceneIdx] + localT) - (vo.start || 0);
+        const vDur = vo.mediaDuration || 0;
+        if (gRel >= 0 && (!vDur || gRel < vDur)) { active.add('voiceover'); driveAudioEl('voiceover', vo, gRel); }
+        else pauseAudioKey('voiceover');
+      }
+    }
+    for (const [key] of pbEls) if (!active.has(key)) pauseAudioKey(key);
+  }
+  function stopAllAudio() { for (const [key] of pbEls) pauseAudioKey(key); }
+
   SD.engine = {
     defaultAnim, BG_DEFS, sceneBgColor, backgroundCanvas,
     layerContent, planFor, estimateDuration,
     evalCamera, autoCamera,
     contentEnd, sceneDuration, sceneStarts, projectDuration, timeToScene,
+    syncAudio, stopAllAudio,
     renderSceneFrame, renderProjectFrame, renderLayer, localToWorld,
     styles, textLayout, headAt, paintStrokes, drawStrokesTo,
     invalidateLayer(layer) { layer._content = null; layer._plan = null; },

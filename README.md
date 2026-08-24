@@ -61,7 +61,7 @@ python3 -m http.server 8000
 - **WebM & MP4 video** — any fps up to 60, scale up to 2×, quality presets, with an EBML duration patch so exported files report the correct length everywhere
 - **Animated GIF** — custom in-browser GIF89a encoder (6-6-6 web palette + Floyd–Steinberg dithering + LZW)
 - **PNG snapshot** of any moment
-- **Audio!** Record a **voiceover from your mic** while the animation plays, mix in a **music file** (loopable), plus automatic **pencil-scratch sound effects** while the hand draws
+- **Audio!** Record a **voiceover from your mic** while the animation plays, mix in a **music file** (loopable), plus automatic **pencil-scratch sound effects** while the hand draws — or ship **pre-recorded clips & a full voiceover track** inside a JSON storyboard (see below)
 
 ### Quality of life
 - **Dark & light themes** (one toggle, persisted)
@@ -116,6 +116,7 @@ Prefer code to clicks? SwapDraws imports **JSON storyboards** — hand-authored 
 | `svg` | `src` — `data:image/svg+xml,…` or a URL; real paths are traced |
 | `image` | `src` — `data:` URL or image URL; sketch + color reveal |
 | `drawing` | `strokes: [{pts:[x,y,…], color, width, alpha}]` in canvas px (or `normalized: true` for 0..1) |
+| `audio` | `src` — a **data-URL** (mp3/wav/ogg/m4a) or URL; `delay`, `duration` (default = clip length), `volume` (0–1), `loop`. Invisible on canvas; shows as a **🔊 timeline bar** (drag/resize it to re-time & trim). Doesn't shift the visual layer chain: without `delay` it starts with the scene |\n\n**🔊 Sound in scripts**\n- Top-level **`"voiceover"`**: one full-track audio for the whole video — `\"voiceover\": \"data:audio/…\"` or `{ \"src\": \"data:audio/…\", \"volume\": 0.9, \"start\": 0, \"name\": \"Narration\" }`.\n- **`audio` layers** are per-scene clips placed on the timeline.\n- Both **play live during in-app playback** (auto pause/seek synced to the playhead) and are **mixed into WebM/MP4 exports** — decoded and scheduled sample-accurately on the WebAudio clock alongside the mic/music options, which still work as before.\n- Audio blobs persist in the app's asset store, and **project backups** (`.swapdraws.json`) embed them — audio round-trips everywhere.
 
 **Any layer** also accepts: `name`, `w`, `h`, `rot`, `opacity`, `flipX`, `flipY`, `hidden`, `delay`, `duration`, `style` (16 animation styles), `dir`, `easing`, `ink`, `strokeWidth`, `fillReveal`, `rainbow`, `jitter`, `sfx`, `hand` (`hand1…4`/`none`), `handRotate`, `algo`, `sensitivity`, `exit: {style, duration}`.
 

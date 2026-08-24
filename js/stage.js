@@ -572,6 +572,7 @@
       S.editTime += dt;
       const d = E().sceneDuration(S.project, S.scene());
       if (S.editTime >= d) { S.editTime = d; pause(); U.bus.emit('time'); return; }
+      E().syncAudio(S.project, S.project.activeSceneIdx, S.editTime, true);
       U.bus.emit('time');
       playState.raf = requestAnimationFrame(tick);
     };
@@ -581,6 +582,7 @@
     playState.playing = false; A().playing = false;
     if (playState.raf) cancelAnimationFrame(playState.raf);
     playState.raf = null;
+    try { E().syncAudio(A().project, A().project.activeSceneIdx, A().editTime, false); } catch {}
     U.bus.emit('playstate', false);
     scheduleFrame();
   }

@@ -95,12 +95,66 @@
   }
 
   /* ═══════ audio graph ═══════ */
-  async function buildAudio(opts, durSec) {
-    if (!opts.mic && !opts.music && !opts.sfxNeeded) return null;
+  /* JSON/imported audio: per-scene clips (global clock) + full-track voiceover */
+  function collectClips(scope) {
+    const out = { clips: [], vo: null };
+    const p = A().project;
+    if (!p) return out;
+    const starts = E().sceneStarts(p);
+    p.scenes.forEach((s, i) => {
+      if (scope === 'scene' && i !== p.activeSceneIdx) return;
+      for (const l of s.layers) {
+        if (l.type === 'audio' && l.audio && l.visible !== false) {
+          out.clips.push({ assetId: l.audio.assetId, at: starts[i] + (l.start || 0), duration: l.duration || 0, volume: l.audio.volume ?? 1, loop: !!l.audio.loop });
+        }
+      }
+    });
+    if (p.voiceover && p.voiceover.assetId) {
+      out.vo = { assetId: p.voiceover.assetId, at: p.voiceover.start || 0, duration: p.voiceover.mediaDuration || 0, volume: p.voiceover.volume ?? 1, loop: false };
+    }
+    return out;
+  }
+
+  async function buildAudio(opts, durSec, scopeOffset = 0) {
+    const hasClips = opts.clipsData && (opts.clipsData.clips.length > 0 || !!opts.clipsData.vo);
+    if (!opts.mic && !opts.music && !opts.sfxNeeded && !hasClips) return null;
     const AC = window.AudioContext || window.webkitAudioContext;
     const ac = new AC();
     const dest = ac.createMediaStreamDestination();
-    const nodes = { ac, dest, musicEl: null, micStream: null, gains: [] };
+    const nodes = { ac, dest, musicEl: null, micStream: null, gains: [], clipSrcs: [], startClips: null };
+    if (hasClips) {
+      // decode everything up-front; schedule on the AudioContext clock at record start
+      const items = [...opts.clipsData.clips];
+      if (opts.clipsData.vo) items.push(opts.clipsData.vo);
+      const buffers = new Map();
+      const ready = (await Promise.all(items.map(async (c) => {
+        if (!buffers.has(c.assetId)) buffers.set(c.assetId, await ac.decodeAudioData(await SD.assets.audioArrayBuffer(c.assetId)).catch((e) => { console.warn('[export audio] decode failed', e); return null; }));
+        return { c, buf: buffers.get(c.assetId) };
+      }))).filter((x) => x.buf);
+      nodes.startClips = () => {
+        const now = ac.currentTime;
+        for (const { c, buf } of ready) {
+          const rel = c.at - scopeOffset;            // window start on the export clock
+          if (rel >= durSec - 0.02) continue;        // starts after the export ends
+          const mediaDur = buf.duration;
+          const mediaOff = U.clamp(-Math.min(0, rel), 0, Math.max(0, mediaDur - 0.02));
+          const avail = mediaDur - mediaOff;                       // media left from offset
+          const winLeft = durSec - Math.max(0, rel);               // export seconds remaining
+          const want = c.duration > 0 ? c.duration : avail;        // authored window (default: whole media)
+          const loops = c.loop && want > avail;                    // loop only if the window outlasts the media
+          const playDur = Math.min(loops ? want : Math.min(want, avail), winLeft);
+          if (playDur <= 0.02) continue;
+          const src = ac.createBufferSource();
+          src.buffer = buf;
+          src.loop = loops;
+          const g = ac.createGain();
+          g.gain.value = U.clamp(c.volume ?? 1, 0, 1);
+          src.connect(g).connect(dest);
+          try { src.start(Math.max(0, now + rel), mediaOff, playDur); nodes.clipSrcs.push(src); }
+          catch (e) { console.warn('[export audio] schedule failed', e); }
+        }
+      };
+    }
     if (opts.mic) {
       try {
         nodes.micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
@@ -141,6 +195,7 @@
   }
   function stopAudio(nodes) {
     if (!nodes) return;
+    try { nodes.clipSrcs && nodes.clipSrcs.forEach((s) => { try { s.stop(); } catch {} }); } catch {}
     try { nodes.musicEl && nodes.musicEl.pause(); } catch {}
     try { nodes.micStream && nodes.micStream.getTracks().forEach((t) => t.stop()); } catch {}
     try { nodes.ac.close(); } catch {}
@@ -202,13 +257,15 @@
     const stream = canReq ? probe : canvas.captureStream(fps);
     const vtrack = stream.getVideoTracks()[0];
 
+    const scopeOffset = scope === 'scene' ? E().sceneStarts(S.project)[S.project.activeSceneIdx] : 0;
     const audioOpts = {
       mic: $('expMic').checked, micVol: +$('micVol').value / 100,
       music: $('expMusic').checked, musicLoop: $('musicLoop').checked, musicVol: +$('musicVol').value / 100,
       sfxNeeded: anySfxLayer(scope),
+      clipsData: collectClips(scope),
     };
     let audio = null;
-    try { audio = await buildAudio(audioOpts, dur); } catch (e) { console.warn(e); }
+    try { audio = await buildAudio(audioOpts, dur, scopeOffset); } catch (e) { console.warn(e); }
     let recStream = stream;
     if (audio && audio.dest.stream.getAudioTracks().length) {
       recStream = new MediaStream([vtrack, ...audio.dest.stream.getAudioTracks()]);
@@ -224,11 +281,11 @@
     for (let i = 3; i >= 1; i--) { $('expStatus').textContent = `Starting in ${i}…`; await sleep(650); }
     if (running === 'cancel') throw new Error('cancelled');
 
-    const scopeOffset = scope === 'scene' ? E().sceneStarts(S.project)[S.project.activeSceneIdx] : 0;
     const session = { cancelled: false };
     running = session;
 
     rec.start(250);
+    if (audio && audio.startClips) { try { audio.startClips(); } catch (e) { console.warn(e); } }
     if (audio && audio.musicEl) { try { audio.musicEl.currentTime = 0; audio.musicEl.play(); } catch {} }
     const t0 = performance.now();
     let frames = 0;

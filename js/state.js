@@ -32,6 +32,7 @@
       canvas: { width: 1920, height: 1080, aspect: '16:9', res: 1080 },
       scenes: [newScene('Scene 1')],
       activeSceneIdx: 0,
+      voiceover: null, // optional full-track audio: {assetId, volume, start, name, mediaDuration}
       defaultAnim: null, // reserved
       _cv: 0,
     };
@@ -258,8 +259,14 @@
       saveIndicator(false, 'loading…');
       try {
         const assetIds = new Set();
-        for (const s of p.scenes) for (const l of s.layers) if (l.image && l.image.assetId) assetIds.add(l.image.assetId);
+        const audioIds = new Set();
+        for (const s of p.scenes) for (const l of s.layers) {
+          if (l.image && l.image.assetId) assetIds.add(l.image.assetId);
+          if (l.type === 'audio' && l.audio && l.audio.assetId) audioIds.add(l.audio.assetId);
+        }
+        if (p.voiceover && p.voiceover.assetId) audioIds.add(p.voiceover.assetId);
         await Promise.all([...assetIds].map((a) => SD.assets.getImage(a).catch(() => null)));
+        await Promise.all([...audioIds].map((a) => SD.assets.loadAudioRec(a).catch(() => null)));
       } catch (e) { console.warn(e); }
       await this.afterLoad('open');
       localStorage.setItem(LS_AUTOSAVE, id);
@@ -377,6 +384,17 @@
         } catch (e) { /* skip */ }
       }
     }
+    // embed audio (clips + full-track voiceover) the same way
+    const embedAudio = async (assetId) => {
+      if (!assetId || payload.assets[assetId]) return;
+      try {
+        const rec = await SD.assets.loadAudioRec(assetId);
+        const dataURL = rec.meta.dataURL || (await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = () => rej(fr.error); fr.readAsDataURL(rec.blob); }));
+        payload.assets[assetId] = { kind: 'audio', name: rec.meta.name, duration: rec.meta.duration, dataURL };
+      } catch (e) { /* skip */ }
+    };
+    for (const s of S.project.scenes) for (const l of s.layers) if (l.type === 'audio' && l.audio) await embedAudio(l.audio.assetId);
+    if (S.project.voiceover && S.project.voiceover.assetId) await embedAudio(S.project.voiceover.assetId);
     U.download(new Blob([JSON.stringify(payload)], { type: 'application/json' }), (S.project.name || 'project').replace(/\s+/g, '-').toLowerCase() + '.swapdraws.json');
     U.toast('Project downloaded', 'ok');
   }
@@ -386,9 +404,16 @@
       if (!payload || payload.app !== 'swapdraws' || !payload.project) throw new Error('bad file');
       const p = payload.project;
       p.id = U.uid('prj'); // avoid id collisions
-      for (const [oldId, dataURL] of Object.entries(payload.assets || {})) {
-        const reg = await SD.assets.registerDataURL(dataURL);
-        for (const s of p.scenes) for (const l of s.layers) if (l.image && l.image.assetId === oldId) l.image.assetId = reg.id;
+      if (!('voiceover' in p)) p.voiceover = null;
+      for (const [oldId, entry] of Object.entries(payload.assets || {})) {
+        if (entry && typeof entry === 'object' && entry.kind === 'audio') {
+          const reg = await SD.assets.registerAudioStored(entry.dataURL, entry);
+          for (const s of p.scenes) for (const l of s.layers) if (l.type === 'audio' && l.audio && l.audio.assetId === oldId) l.audio.assetId = reg.id;
+          if (p.voiceover && p.voiceover.assetId === oldId) p.voiceover.assetId = reg.id;
+        } else {
+          const reg = await SD.assets.registerDataURL(entry);
+          for (const s of p.scenes) for (const l of s.layers) if (l.image && l.image.assetId === oldId) l.image.assetId = reg.id;
+        }
       }
       S.project = S._hydrate(p);
       S._undo = []; S._redo = []; S.editTime = 0; S.selection = new Set();

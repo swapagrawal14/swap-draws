@@ -155,6 +155,26 @@
       return l;
     };
 
+    const buildAudio = async (o, idx) => {
+      if (!o.src) { warn.push(`layer ${idx}: audio layer needs a "src" (data-URL or URL) — skipped`); return null; }
+      let reg = null;
+      try {
+        const src = String(o.src);
+        if (src.startsWith('data:')) reg = await SD.assets.registerAudioDataURL(src, { name: o.name || 'Audio clip' });
+        else { const blob = await (await fetch(src)).blob(); reg = await SD.assets.registerAudio(blob, { name: o.name || 'Audio clip' }); }
+        if (!reg.duration) throw new Error('could not read audio duration');
+      } catch (e) { warn.push(`layer ${idx}: audio could not be loaded (${e.message || 'fetch failed'}) — skipped`); return null; }
+      const l = S.baseLayer('audio', 0, 0, 0, 0, o.name || 'Audio clip');
+      l.audio = {
+        assetId: reg.id,
+        volume: U.clamp(num(o.volume) ? o.volume : 1, 0, 1),
+        loop: !!o.loop,
+        mediaDuration: Math.round(reg.duration * 100) / 100,
+      };
+      l.duration = U.clamp(num(o.duration) ? o.duration : reg.duration, 0.1, 600);
+      return l;
+    };
+
     const buildDrawing = (o, idx) => {
       if (!Array.isArray(o.strokes) || !o.strokes.length) { warn.push(`layer ${idx}: drawing has no strokes — skipped`); return null; }
       const norm = !!o.normalized;
@@ -206,15 +226,17 @@
         else if (type === 'svg') l = await buildSvg(o, `${si + 1}.${li + 1}`);
         else if (type === 'image' || type === 'img') l = await buildImage(o, `${si + 1}.${li + 1}`);
         else if (type === 'drawing' || type === 'draw') l = buildDrawing(o, `${si + 1}.${li + 1}`);
+        else if (type === 'audio' || type === 'sound') l = await buildAudio(o, `${si + 1}.${li + 1}`);
         else { warn.push(`scene ${si + 1}, layer ${li + 1}: unknown type "${o.type ?? '(missing)'}" — skipped`); continue; }
         if (!l) continue;
         mkCommon(l, o, `${si + 1}.${li + 1}`);
         if (!l._jsonNoRepos) place(l, o);
         delete l._jsonNoRepos;
-        // sequencing: unless a delay was authored, chain layers in order
-        if (!num(o.delay) && !num(o.start)) { l.start = Math.round(cursor * 100) / 100; }
+        // sequencing: unless a delay was authored, chain layers in order.
+        // audio underlays start with the scene and never shift the visual chain.
+        if (!num(o.delay) && !num(o.start)) { l.start = l.type === 'audio' ? 0 : Math.round(cursor * 100) / 100; }
         if (!num(o.duration) && o.duration !== 0) l.duration = E.estimateDuration(p, l);
-        cursor = l.start + l.duration + 0.25;
+        if (l.type !== 'audio') cursor = l.start + l.duration + 0.25;
         scene.layers.push(l);
         layerCount++;
       }
@@ -226,10 +248,31 @@
     if (!p.scenes.length) fail('No scenes could be built from this script.');
     if (!layerCount) warn.push('No layers were created — check the "layers" arrays.');
 
+    // optional full-track voiceover: "voiceover": "<data-URL>" | {src, volume, start, name}
+    if (spec.voiceover != null) {
+      const vo = typeof spec.voiceover === 'string' ? { src: spec.voiceover } : (spec.voiceover || {});
+      try {
+        if (!vo.src) throw new Error('missing "src"');
+        const src = String(vo.src);
+        let reg;
+        if (src.startsWith('data:')) reg = await SD.assets.registerAudioDataURL(src, { name: vo.name || 'Voiceover' });
+        else { const blob = await (await fetch(src)).blob(); reg = await SD.assets.registerAudio(blob, { name: vo.name || 'Voiceover' }); }
+        if (!reg.duration) throw new Error('could not read audio duration');
+        p.voiceover = {
+          assetId: reg.id,
+          volume: U.clamp(num(vo.volume) ? vo.volume : 1, 0, 1),
+          start: num(vo.start) ? Math.max(0, vo.start) : 0,
+          name: (vo.name || reg.name || 'Voiceover'),
+          mediaDuration: Math.round(reg.duration * 100) / 100,
+        };
+      } catch (e) { warn.push(`voiceover could not be loaded (${e.message || 'fetch failed'}) — ignored`); }
+    }
+
     // atomic swap-in of the fully built project
     await S.createProject(name);
     S.project.scenes = p.scenes;
     S.project.canvas = p.canvas;
+    S.project.voiceover = p.voiceover || null;
     S.project.name = name;
     S.project.activeSceneIdx = 0;
     S.project._cv++;
@@ -263,7 +306,18 @@
   function exportScript() {
     const p = SD.state.project, CW = p.canvas.width, CH = p.canvas.height;
     const px = (v, t) => Math.round((v / t) * 1000) / 1000;
+    const audioSrc = (assetId) => {
+      const meta = SD.assets.audioMetaSync(assetId);
+      return (meta && meta.dataURL) || '(embedded audio — use project backup for fidelity)';
+    };
     const layerOut = (l) => {
+      if (l.type === 'audio' && l.audio) {
+        return {
+          type: 'audio', name: l.name, src: audioSrc(l.audio.assetId),
+          delay: l.start, duration: Math.round(l.duration * 100) / 100,
+          volume: l.audio.volume, loop: l.audio.loop || undefined,
+        };
+      }
       const o = { type: l.type, name: l.name, x: px(l.x + l.w / 2, CW), y: px(l.y + l.h / 2, CH), style: l.anim.style, delay: l.start, duration: Math.round(l.duration * 100) / 100 };
       if (l.anim.hand !== 'inherit') o.hand = l.anim.hand;
       if (l.type === 'text') Object.assign(o, { text: l.text.content, font: l.text.font, size: l.text.size, color: l.text.color, bold: l.text.bold, italic: l.text.italic, align: l.text.align, underline: l.text.underline });
@@ -276,6 +330,11 @@
     const spec = {
       swapdraws: 1, name: p.name,
       canvas: { aspect: p.canvas.aspect === 'custom' ? '16:9' : p.canvas.aspect, resolution: p.canvas.res },
+      voiceover: p.voiceover ? {
+        src: audioSrc(p.voiceover.assetId),
+        volume: p.voiceover.volume, start: p.voiceover.start || undefined,
+        name: p.voiceover.name,
+      } : undefined,
       scenes: p.scenes.map((s) => ({
         name: s.name, background: { type: s.background.type, color: s.background.color },
         transition: { type: s.transition.type, duration: s.transition.duration }, hold: s.holdAfter,
