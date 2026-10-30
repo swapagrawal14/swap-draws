@@ -22,6 +22,7 @@
     $('tourNext').addEventListener('click', () => { step++; if (step >= STEPS.length) end(); else show(); });
     $('tourOverlay').addEventListener('click', (e) => { if (e.target === $('tourOverlay')) end(); });
     $('btnTour').addEventListener('click', () => start(true));
+    addEventListener('resize', () => { if (!$('tourOverlay').hidden) show(); });
     $('btnHelp').addEventListener('click', () => { $('helpModal').hidden = false; });
     U.$$('[data-close]').forEach((b) => b.addEventListener('click', () => { $(b.dataset.close).hidden = true; }));
     // welcome
@@ -53,35 +54,70 @@
     show();
     SD.state.savePrefs({ toured: true });
   }
+  let showToken = 0;
+
+  /* If the target lives inside a side-panel pane that isn't open, switch to that tab
+     (via the app's own tab button, so panels.js keeps its state in sync). */
+  function revealTarget(target) {
+    const pane = target.closest('.ppane');
+    if (!pane || pane.classList.contains('active')) return false;
+    const panel = pane.closest('.side-panel');
+    const btn = panel && U.$(`.ptab[data-ptab="${pane.dataset.ppane}"]`, panel);
+    if (btn) btn.click();
+    else if (panel && panel.id === 'rightPanel' && SD.panels?.openRightTab) SD.panels.openRightTab(pane.dataset.ppane);
+    return true;
+  }
+
+  function centerCard(card) {
+    const w = card.offsetWidth || 330, h = card.offsetHeight || 220;
+    card.style.transform = '';
+    card.style.right = 'auto'; card.style.bottom = 'auto';
+    card.style.left = Math.max(10, (innerWidth - w) / 2) + 'px';
+    card.style.top = Math.max(10, (innerHeight - h) / 2) + 'px';
+  }
+
   function show() {
     const s = STEPS[step];
+    const token = ++showToken;
     $('tourStep').textContent = `Step ${step + 1} of ${STEPS.length}`;
     $('tourTitle').textContent = s.title;
     $('tourText').textContent = s.text;
     $('tourNext').textContent = step === STEPS.length - 1 ? 'Start creating ✨' : 'Next →';
     $('tourDots').innerHTML = STEPS.map((_, i) => `<i class="${i === step ? 'on' : ''}"></i>`).join('');
-    if (hole) hole.remove();
+    if (hole) { hole.remove(); hole = null; }
+    const target = s.el ? U.$(s.el) : null;
+    if (!target) { centerCard($('tourCard')); return; }
+    const switched = revealTarget(target);
+    // wait a frame (two after a tab switch) so layout reflects the newly shown pane
+    const measure = () => { if (token === showToken && !$('tourOverlay').hidden) place(target); };
+    requestAnimationFrame(() => (switched ? requestAnimationFrame(measure) : measure()));
+  }
+
+  function place(target) {
     const ov = $('tourOverlay');
     const card = $('tourCard');
-    if (s.el && U.$(s.el)) {
-      const r = U.$(s.el).getBoundingClientRect();
-      hole = U.el('div', { class: 'hole' });
-      hole.style.cssText = `left:${r.left - 8}px;top:${r.top - 8}px;width:${r.width + 16}px;height:${r.height + 16}px;`;
-      ov.appendChild(hole);
-      // place card beside it
-      const vw = innerWidth, vh = innerHeight;
-      let x = r.left + r.width / 2 - 160, y = r.bottom + 20;
+    if (hole) { hole.remove(); hole = null; }
+    const r = target.getBoundingClientRect();
+    if (!r.width || !r.height) { centerCard(card); return; } // still hidden: no spotlight
+    hole = U.el('div', { class: 'hole' });
+    hole.style.cssText = `left:${r.left - 8}px;top:${r.top - 8}px;width:${r.width + 16}px;height:${r.height + 16}px;`;
+    ov.appendChild(hole);
+    // place card beside it
+    const vw = innerWidth, vh = innerHeight;
+    let x = r.left + r.width / 2 - 160, y = r.bottom + 20;
+    if (r.height > vh * 0.5 && (r.left > 370 || vw - r.right > 370)) {
+      // tall side panel: sit beside it instead of on top of it
+      x = r.left > 370 ? r.left - 350 : r.right + 20;
+      y = U.clamp(r.top + 40, 10, vh - 260);
+    } else {
       if (y + 220 > vh) y = r.top - 230;
       if (y < 10) y = Math.min(vh - 240, Math.max(10, r.top));
-      x = U.clamp(x, 10, vw - 340);
-      card.style.left = x + 'px'; card.style.top = y + 'px'; card.style.right = 'auto'; card.style.bottom = 'auto';
-    } else {
-      card.style.left = '50%'; card.style.top = '50%';
-      card.style.transform = 'translate(-50%,-50%)';
-      setTimeout(() => { card.style.transform = ''; }, 400);
     }
+    x = U.clamp(x, 10, vw - 340);
+    card.style.transform = '';
+    card.style.left = x + 'px'; card.style.top = y + 'px'; card.style.right = 'auto'; card.style.bottom = 'auto';
   }
-  function end() { $('tourOverlay').hidden = true; if (hole) { hole.remove(); hole = null; } }
+  function end() { showToken++; $('tourOverlay').hidden = true; if (hole) { hole.remove(); hole = null; } }
 
   /* ── welcome overlay with recent projects ── */
   function showWelcomeIfNeeded() {
