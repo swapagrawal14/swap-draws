@@ -7,7 +7,7 @@
 *A free, in-browser whiteboard animation studio · edu-made fun* 🌷✨
 
 [![Live demo](https://img.shields.io/badge/▶_live_demo-swap--draws.vercel.app-F0509A?style=for-the-badge&labelColor=111111)](https://swap-draws.vercel.app/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-FFD94A?style=for-the-badge&labelColor=111111)](#-attribution--licenses)
+[![License: MIT](https://img.shields.io/badge/license-MIT-FFD94A?style=for-the-badge&labelColor=111111)](LICENSE)
 [![No build step](https://img.shields.io/badge/build_step-none-F0509A?style=for-the-badge&labelColor=111111)](#-quick-start)
 [![100% local](https://img.shields.io/badge/100%25-local-FFD94A?style=for-the-badge&labelColor=111111)](#-privacy)
 [![Vanilla JS](https://img.shields.io/badge/vanilla-JS-F0509A?style=for-the-badge&logo=javascript&logoColor=white&labelColor=111111)](#-architecture)
@@ -30,7 +30,7 @@ No sign-up · no watermark · no uploads. Everything runs **100% locally** in yo
 - [🤖 Let an AI write your storyboard](#-let-an-ai-write-your-storyboard)
 - [📥 JSON storyboards](#-json-storyboards--write-your-video-as-a-file)
 - [🏗 Architecture](#-architecture)
-- [🙏 Attribution & licenses](#-attribution--licenses)
+- [🙏 Attribution & licenses](LICENSE)
 - [🔒 Privacy](#-privacy)
 
 ---
@@ -293,7 +293,7 @@ swapdraws/
 
 - Hand photographs & the original concept: **[Inkplainer](https://inkplainer.pages.dev/)** by NadirWeb-App, Apache License 2.0 (see `assets/hands/LICENSE-inkplainer-assets`). SwapDraws is an independent, heavily extended re-implementation.
 - All fonts are licensed under the **SIL Open Font License 1.1**: Caveat, Patrick Hand, Permanent Marker, Shadows Into Light Two, Kalam, Nunito, DM Sans, Merriweather, Space Mono (Google Fonts).
-- Everything else: MIT licensed. Have fun, make great videos!
+- Everything else: MIT licensed, see [`LICENSE`](LICENSE). Have fun, make great videos!
 
 ## 🔒 Privacy
 
