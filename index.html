@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SwapDraws — Whiteboard Animation Studio</title>
 <meta name="description" content="SwapDraws is a free, private, browser-based whiteboard animation studio. Scenes, timeline, camera moves, SVG tracing, voiceover export and more.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%235b8cff'/%3E%3Cpath d='M8 24 L13.5 13.5 L21 6 L26 11 L18.5 18.5 Z' fill='white'/%3E%3Ccircle cx='23.5' cy='8.5' r='2.5' fill='%23ffb4a8'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='1.5' y='1.5' width='29' height='29' rx='8' fill='%23F0509A' stroke='%23111' stroke-width='3'/%3E%3Cpath d='M8 24 L10 18 L20 8 L24 12 L14 22 Z' fill='%23FFD94A' stroke='%23111' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M24 3.5c.4 2.2 1.3 3.1 3.5 3.5-2.2.4-3.1 1.3-3.5 3.5-.4-2.2-1.3-3.1-3.5-3.5 2.2-.4 3.1-1.3 3.5-3.5z' fill='white' stroke='%23111' stroke-width='1'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#F0509A">
 <link rel="stylesheet" href="assets/fonts/fonts.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -15,11 +16,11 @@
 <header id="topbar">
   <div class="tb-group tb-brand" data-tour="brand">
     <div class="logo-mark" aria-hidden="true">
-      <svg viewBox="0 0 32 32" width="26" height="26"><rect width="32" height="32" rx="7" fill="var(--accent)"/><path d="M8 24 L13.5 13.5 L21 6 L26 11 L18.5 18.5 Z" fill="#fff"/><circle cx="23.5" cy="8.5" r="2.5" fill="#ffb4a8"/></svg>
+      <svg viewBox="0 0 40 40" width="38" height="38"><rect x="2" y="2" width="33" height="33" rx="10" fill="#F0509A" stroke="#111" stroke-width="2.5"/><path d="M10 28 L12.5 21 L24 9.5 L28.5 14 L17 25.5 Z" fill="#FFD94A" stroke="#111" stroke-width="2.2" stroke-linejoin="round"/><path d="M10 28 L12.5 21 L17 25.5 Z" fill="#fff" stroke="#111" stroke-width="2" stroke-linejoin="round"/><path d="M21.5 12 L26 16.5" stroke="#111" stroke-width="2"/><path class="sparkle-anim" d="M33 1.5c.6 3.2 1.9 4.5 5 5-3.1.6-4.4 1.9-5 5-.6-3.1-1.9-4.4-5-5 3.1-.5 4.4-1.8 5-5z" fill="#fff" stroke="#111" stroke-width="1.5" stroke-linejoin="round"/></svg>
     </div>
     <div class="brand-txt">
-      <span class="brand-name">SwapDraws</span>
-      <span class="brand-sub">whiteboard studio</span>
+      <span class="brand-name">Swap<em>Draws</em></span>
+      <span class="brand-sub">whiteboard studio ✦ edu-made fun</span>
     </div>
   </div>
 
@@ -474,25 +475,56 @@
 <!-- ════════════════════ WELCOME ════════════════════ -->
 <div id="welcomeOverlay" hidden>
   <div class="wel-card">
-    <div class="wel-brand">
-      <svg viewBox="0 0 32 32" width="52" height="52"><rect width="32" height="32" rx="7" fill="var(--accent)"/><path d="M8 24 L13.5 13.5 L21 6 L26 11 L18.5 18.5 Z" fill="#fff"/><circle cx="23.5" cy="8.5" r="2.5" fill="#ffb4a8"/></svg>
-      <div><h1>SwapDraws</h1><p>Free whiteboard animation studio — scenes, timeline, camera moves, voiceover, GIF &amp; video export. No sign-up, no watermark, nothing leaves your device.</p></div>
+    <svg class="doodle wel-doodle-1" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2c1.2 9.5 5.5 14 16 16-10.5 2-14.8 6.5-16 16-1.2-9.5-5.5-14-16-16 10.5-2 14.8-6.5 16-16z" fill="#FFD94A" stroke="#111" stroke-width="2.5" stroke-linejoin="round"/></svg>
+    <svg class="doodle wel-doodle-3" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2c1.2 9.5 5.5 14 16 16-10.5 2-14.8 6.5-16 16-1.2-9.5-5.5-14-16-16 10.5-2 14.8-6.5 16-16z" fill="#F0509A" stroke="#111" stroke-width="2.5" stroke-linejoin="round"/></svg>
+    <svg class="doodle wel-doodle-2" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 46 C24 36 24 30 24 24" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M24 40 C18 39 13 35 12 29 C18 30 22 34 24 40Z" fill="#7BD389" stroke="#111" stroke-width="2.2" stroke-linejoin="round"/><path d="M24 36 C30 35 34 31 35 26 C29 27 26 31 24 36Z" fill="#7BD389" stroke="#111" stroke-width="2.2" stroke-linejoin="round"/><path d="M15 9 L19 14 L24 6 L29 14 L33 9 C34 18 31 24 24 24 C17 24 14 18 15 9Z" fill="#F0509A" stroke="#111" stroke-width="2.5" stroke-linejoin="round"/></svg>
+    <div class="wel-hero">
+      <div class="wel-copy">
+        <span class="wel-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5c.7 5.6 3.3 8.3 9.5 9.5-6.2 1.2-8.8 3.9-9.5 9.5-.7-5.6-3.3-8.3-9.5-9.5 6.2-1.2 8.8-3.9 9.5-9.5z" fill="#F0509A" stroke="#111" stroke-width="2" stroke-linejoin="round"/></svg>Swap's AI World · edu-made fun</span>
+        <h1>Swap<em>Draws</em><svg class="wel-underline" viewBox="0 0 300 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 11 C60 3 120 4 170 8 S260 13 296 5" stroke="#F0509A" stroke-width="5" fill="none" stroke-linecap="round"/></svg></h1>
+        <p class="wel-tagline">Turn ideas into <mark>hand-drawn</mark> whiteboard videos ✍️</p>
+        <p class="wel-sub">Scenes, timeline, camera moves, voiceover, GIF &amp; video export. No sign-up, no watermark, and nothing ever leaves your device.</p>
+        <div class="wel-name-row"><input id="welName" type="text" placeholder="Name your project… e.g. My awesome explainer" spellcheck="false" aria-label="Project name"><button id="welCreate" class="pbtn primary big">✦ New project</button></div>
+        <div class="wel-io">
+          <button id="welImport" class="pbtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg> Import JSON</button>
+          <button id="welSample" class="pbtn ghost" title="Download an example JSON script you can edit &amp; re-import">✨ Sample JSON</button>
+          <span class="wel-hint">storyboard or .swapdraws file</span>
+        </div>
+        <input type="file" id="welImpInput" accept="application/json,.json,.swapdraws" hidden>
+      </div>
+      <div class="wel-art" aria-hidden="true">
+        <svg class="board" viewBox="0 0 340 300">
+          <rect x="18" y="26" width="300" height="200" rx="16" fill="#111"/>
+          <rect x="12" y="20" width="300" height="200" rx="16" fill="#FFFDF7" stroke="#111" stroke-width="3"/>
+          <rect x="12" y="20" width="300" height="34" rx="16" fill="#FFD94A" stroke="#111" stroke-width="3"/>
+          <rect x="12" y="40" width="300" height="14" fill="#FFD94A"/>
+          <line x1="12" y1="54" x2="312" y2="54" stroke="#111" stroke-width="3"/>
+          <circle cx="34" cy="37" r="5" fill="#F0509A" stroke="#111" stroke-width="2"/><circle cx="52" cy="37" r="5" fill="#fff" stroke="#111" stroke-width="2"/><circle cx="70" cy="37" r="5" fill="#fff" stroke="#111" stroke-width="2"/>
+          <path class="board-draw" d="M40 120 C55 90 80 90 92 112 S130 140 140 104" stroke="#111" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path class="board-draw d2" d="M168 92 L250 92 M168 112 L280 112 M168 132 L230 132" stroke="#F0509A" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path class="board-draw d3" d="M44 178 C90 160 140 196 190 176 S260 168 286 182" stroke="#111" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-dasharray="600"/>
+          <g transform="translate(78 132)"><path d="M0 40 C0 30 0 24 0 18" stroke="#111" stroke-width="2.5" fill="none"/><path d="M-9 3 L-5 8 L0 0 L5 8 L9 3 C10 12 7 18 0 18 C-7 18 -10 12 -9 3Z" fill="#F0509A" stroke="#111" stroke-width="2.5" stroke-linejoin="round"/></g>
+          <g class="float"><g transform="translate(222 150) rotate(-35)">
+            <rect x="0" y="0" width="94" height="22" rx="5" fill="#FFD94A" stroke="#111" stroke-width="3"/>
+            <rect x="70" y="0" width="24" height="22" rx="5" fill="#F0509A" stroke="#111" stroke-width="3"/>
+            <path d="M0 0 L-24 11 L0 22 Z" fill="#FFE8C8" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M-15 7 L-24 11 L-15 15 Z" fill="#111"/>
+          </g></g>
+          <g class="float f2"><path d="M318 -6 c1.4 10 5.6 14.4 16 16 -10.4 1.6 -14.6 6 -16 16 -1.4 -10 -5.6 -14.4 -16 -16 10.4 -1.6 14.6 -6 16 -16z" fill="#FFD94A" stroke="#111" stroke-width="2.5" stroke-linejoin="round"/></g>
+          <path d="M30 252 c.9 6 3.4 8.6 9.6 9.6 -6.2 1 -8.7 3.6 -9.6 9.6 -.9 -6 -3.4 -8.6 -9.6 -9.6 6.2 -1 8.7 -3.6 9.6 -9.6z" fill="#F0509A" stroke="#111" stroke-width="2" stroke-linejoin="round" class="float"/>
+          <text x="58" y="276" font-family="Caveat, cursive" font-size="26" font-weight="700" fill="currentColor" transform="rotate(-3 58 276)">draw it. animate it. share it!</text>
+        </svg>
+      </div>
     </div>
     <div class="wel-cols">
       <div class="wel-new">
-        <h3>Start something new</h3>
-        <div class="wel-name-row"><input id="welName" type="text" placeholder="My awesome explainer" spellcheck="false"><button id="welCreate" class="pbtn primary big">Create →</button></div>
+        <h3>Or start from a template</h3>
         <div class="wel-templates" id="welTemplates">
           <button class="tpl" data-tpl="blank"><b>Blank board</b><span>Empty 16:9 canvas</span></button>
           <button class="tpl" data-tpl="explainer"><b>Explainer kit</b><span>Title + content + outro scenes</span></button>
           <button class="tpl" data-tpl="social"><b>Social short</b><span>9:16 vertical board</span></button>
           <button class="tpl" data-tpl="chalk"><b>Chalkboard class</b><span>Blackboard style preset</span></button>
         </div>
-        <div class="wel-io">
-          <button id="welImport" class="pbtn">📥 Import JSON storyboard / project</button>
-          <button id="welSample" class="pbtn ghost" title="Download an example JSON script you can edit & re-import">✨ sample</button>
-        </div>
-        <input type="file" id="welImpInput" accept="application/json,.json,.swapdraws" hidden>
       </div>
       <div class="wel-recent-box">
         <h3>Recent projects</h3>
